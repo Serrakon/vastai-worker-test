@@ -10,7 +10,6 @@ Environment variables:
     BENCHMARK_PAYLOAD   — JSON string for benchmark test payload (default: {"echo":"benchmark"})
 """
 
-
 import json
 import os
 
@@ -19,7 +18,14 @@ from vastai import BenchmarkConfig, HandlerConfig, LogActionConfig, Worker, Work
 MODEL_SERVER_PORT = int(os.environ.get("MODEL_SERVER_PORT", "18000"))
 MAX_QUEUE_TIME = float(os.environ.get("MAX_QUEUE_TIME", "300"))
 BENCHMARK_PAYLOAD = json.loads(os.environ.get("BENCHMARK_PAYLOAD", '{"echo": "benchmark"}'))
-
+BENCHMARK_PAYLOAD = {
+    "request_id": f"vast-covers",
+    "user_id": "test-user",
+    "file_path": "https://storage.googleapis.com/img.aiartgen.cc/cover/aria-danil/aria_song_long.mp3",
+    "voice_ref_path": "https://storage.googleapis.com/img.aiartgen.cc/cover/aria-danil/voice.mp4",
+    "ts": 0,
+    "deadline": 0,
+}
 
 worker_config = WorkerConfig(
     model_server_url="http://127.0.0.1",
@@ -35,7 +41,7 @@ worker_config = WorkerConfig(
             workload_calculator=lambda payload: 100.0,
             benchmark_config=BenchmarkConfig(
                 generator=lambda: BENCHMARK_PAYLOAD,
-                runs=2,
+                runs=1,
                 concurrency=1,
             ),
         ),
