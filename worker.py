@@ -30,18 +30,19 @@ BENCHMARK_VOICE_URL = os.environ.get(
 
 def _benchmark_payload():
     """Generate a real covers payload for benchmarking /process throughput."""
-    return {
-        "request_id": f"benchmark-{uuid.uuid4()}",
-        "user_id": "benchmark",
-        "file_path": BENCHMARK_SONG_URL,
-        "voice_ref_path": BENCHMARK_VOICE_URL,
-        "ts": 0,
-        "deadline": 0,
-        "params": {
-            "keep_files": "false",
-            "output_format": "mp3",
-        },
-    }
+    # return {
+    #     "request_id": f"benchmark-{uuid.uuid4()}",
+    #     "user_id": "benchmark",
+    #     "file_path": BENCHMARK_SONG_URL,
+    #     "voice_ref_path": BENCHMARK_VOICE_URL,
+    #     "ts": 0,
+    #     "deadline": 0,
+    #     "params": {
+    #         "keep_files": "false",
+    #         "output_format": "mp3",
+    #     },
+    # }
+    return {"sleep": 10}
 
 
 worker_config = WorkerConfig(
@@ -56,7 +57,7 @@ worker_config = WorkerConfig(
             allow_parallel_requests=False,
             # max_queue_time=MAX_QUEUE_TIME,
             max_queue_time=10.0,
-            workload_calculator=lambda payload: 10000.0,
+            workload_calculator=lambda payload: 250 if payload.get("sleep") else 10000,
             benchmark_config=BenchmarkConfig(
                 generator=_benchmark_payload,
                 runs=1,
