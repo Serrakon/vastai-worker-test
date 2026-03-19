@@ -25,6 +25,7 @@ BENCHMARK_PAYLOAD = {
     "voice_ref_path": "https://storage.googleapis.com/img.aiartgen.cc/cover/aria-danil/voice.mp4",
     "ts": 0,
     "deadline": 0,
+    "echo": "benchmark"
 }
 
 worker_config = WorkerConfig(
