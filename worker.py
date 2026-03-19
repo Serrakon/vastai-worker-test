@@ -48,14 +48,15 @@ worker_config = WorkerConfig(
     model_server_url="http://127.0.0.1",
     model_server_port=MODEL_SERVER_PORT,
     model_log_file="/var/log/model/server.log",
-    max_sessions=1,
+    max_sessions=10,
     handlers=[
         # Sync handler — FIFO queue, has benchmark
         HandlerConfig(
             route="/process",
             allow_parallel_requests=False,
-            max_queue_time=MAX_QUEUE_TIME,
-            workload_calculator=lambda payload: 100.0,
+            # max_queue_time=MAX_QUEUE_TIME,
+            max_queue_time=10.0,
+            workload_calculator=lambda payload: 10000.0,
             benchmark_config=BenchmarkConfig(
                 generator=_benchmark_payload,
                 runs=1,
