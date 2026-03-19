@@ -6,27 +6,43 @@ It proxies HTTP requests to a FastAPI model server running on localhost.
 
 Environment variables:
     MODEL_SERVER_PORT   — port of the local model server (default: 18000)
-    MAX_QUEUE_TIME      — max seconds a request can wait in queue (default: 300)
-    BENCHMARK_PAYLOAD   — JSON string for benchmark test payload (default: {"echo":"benchmark"})
+    MAX_QUEUE_TIME      — max seconds a request can wait in queue (default: 30)
+    BENCHMARK_SONG_URL  — URL of the song file for benchmarking
+    BENCHMARK_VOICE_URL — URL of the voice reference file for benchmarking
 """
-
-import json
 import os
+import uuid
 
 from vastai import BenchmarkConfig, HandlerConfig, LogActionConfig, Worker, WorkerConfig
 
 MODEL_SERVER_PORT = int(os.environ.get("MODEL_SERVER_PORT", "18000"))
-MAX_QUEUE_TIME = float(os.environ.get("MAX_QUEUE_TIME", "300"))
-BENCHMARK_PAYLOAD = json.loads(os.environ.get("BENCHMARK_PAYLOAD", '{"echo": "benchmark"}'))
-BENCHMARK_PAYLOAD = {
-    "request_id": f"vast-covers",
-    "user_id": "test-user",
-    "file_path": "https://storage.googleapis.com/img.aiartgen.cc/cover/aria-danil/aria_song_long.mp3",
-    "voice_ref_path": "https://storage.googleapis.com/img.aiartgen.cc/cover/aria-danil/voice.mp4",
-    "ts": 0,
-    "deadline": 0,
-    "echo": "benchmark"
-}
+MAX_QUEUE_TIME = float(os.environ.get("MAX_QUEUE_TIME", "10"))
+
+BENCHMARK_SONG_URL = os.environ.get(
+    "BENCHMARK_SONG_URL",
+    "https://storage.googleapis.com/img.aiartgen.cc/cover/aria-danil/aria_song_long.mp3",
+)
+BENCHMARK_VOICE_URL = os.environ.get(
+    "BENCHMARK_VOICE_URL",
+    "https://storage.googleapis.com/img.aiartgen.cc/cover/aria-danil/voice.mp4",
+)
+
+
+def _benchmark_payload():
+    """Generate a real covers payload for benchmarking /process throughput."""
+    return {
+        "request_id": f"benchmark-{uuid.uuid4()}",
+        "user_id": "benchmark",
+        "file_path": BENCHMARK_SONG_URL,
+        "voice_ref_path": BENCHMARK_VOICE_URL,
+        "ts": 0,
+        "deadline": 0,
+        "params": {
+            "keep_files": "false",
+            "output_format": "mp3",
+        },
+    }
+
 
 worker_config = WorkerConfig(
     model_server_url="http://127.0.0.1",
@@ -41,23 +57,24 @@ worker_config = WorkerConfig(
             max_queue_time=MAX_QUEUE_TIME,
             workload_calculator=lambda payload: 100.0,
             benchmark_config=BenchmarkConfig(
-                generator=lambda: BENCHMARK_PAYLOAD,
+                generator=_benchmark_payload,
                 runs=1,
                 concurrency=1,
+                do_warmup=False,
             ),
         ),
         # Async submit — instant return, parallel OK
         HandlerConfig(
             route="/jobs/submit",
             allow_parallel_requests=True,
-            max_queue_time=30.0,
+            max_queue_time=MAX_QUEUE_TIME,
             workload_calculator=lambda payload: 100.0,
         ),
         # Async poll — instant return, parallel OK, zero cost
         HandlerConfig(
             route="/jobs/status",
             allow_parallel_requests=True,
-            max_queue_time=30.0,
+            max_queue_time=MAX_QUEUE_TIME,
             workload_calculator=lambda payload: 0.0,
         ),
     ],
@@ -65,9 +82,11 @@ worker_config = WorkerConfig(
         on_load=["Application startup complete."],
         on_error=[
             "CUDA error:",
+            "error from cudaGetDeviceCount"
         ],
     ),
 )
 
 if __name__ == "__main__":
     Worker(worker_config).run()
+
