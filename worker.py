@@ -16,7 +16,7 @@ import uuid
 from vastai import BenchmarkConfig, HandlerConfig, LogActionConfig, Worker, WorkerConfig
 
 MODEL_SERVER_PORT = int(os.environ.get("MODEL_SERVER_PORT", "18000"))
-MAX_QUEUE_TIME = float(os.environ.get("MAX_QUEUE_TIME", "10"))
+MAX_QUEUE_TIME = float(os.environ.get("MAX_QUEUE_TIME", "300"))
 
 BENCHMARK_SONG_URL = os.environ.get(
     "BENCHMARK_SONG_URL",
