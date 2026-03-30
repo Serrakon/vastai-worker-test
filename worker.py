@@ -6,7 +6,7 @@ It proxies HTTP requests to a FastAPI model server running on localhost.
 
 Environment variables:
     MODEL_SERVER_PORT   — port of the local model server (default: 18000)
-    MAX_QUEUE_TIME      — max seconds a request can wait in queue (default: 30)
+    MAX_QUEUE_TIME      — max seconds a request can wait in queue (default: 800)
     BENCHMARK_SONG_URL  — URL of the song file for benchmarking
     BENCHMARK_VOICE_URL — URL of the voice reference file for benchmarking
 """
@@ -16,7 +16,7 @@ import uuid
 from vastai import BenchmarkConfig, HandlerConfig, LogActionConfig, Worker, WorkerConfig
 
 MODEL_SERVER_PORT = int(os.environ.get("MODEL_SERVER_PORT", "18000"))
-MAX_QUEUE_TIME = float(os.environ.get("MAX_QUEUE_TIME", "300"))
+MAX_QUEUE_TIME = float(os.environ.get("MAX_QUEUE_TIME", "800"))
 
 BENCHMARK_SONG_URL = os.environ.get(
     "BENCHMARK_SONG_URL",
@@ -49,14 +49,11 @@ worker_config = WorkerConfig(
     model_server_url="http://127.0.0.1",
     model_server_port=MODEL_SERVER_PORT,
     model_log_file="/var/log/model/server.log",
-    max_sessions=10,
     handlers=[
-        # Sync handler — FIFO queue, has benchmark
         HandlerConfig(
             route="/process",
             allow_parallel_requests=False,
-            # max_queue_time=MAX_QUEUE_TIME,
-            max_queue_time=10.0,
+            max_queue_time=MAX_QUEUE_TIME,
             workload_calculator=lambda payload: 250 if payload.get("sleep") else 10000,
             benchmark_config=BenchmarkConfig(
                 generator=_benchmark_payload,
@@ -65,26 +62,23 @@ worker_config = WorkerConfig(
                 do_warmup=False,
             ),
         ),
-        # Async submit — instant return, parallel OK
-        HandlerConfig(
-            route="/jobs/submit",
-            allow_parallel_requests=True,
-            max_queue_time=MAX_QUEUE_TIME,
-            workload_calculator=lambda payload: 100.0,
-        ),
-        # Async poll — instant return, parallel OK, zero cost
-        HandlerConfig(
-            route="/jobs/status",
-            allow_parallel_requests=True,
-            max_queue_time=MAX_QUEUE_TIME,
-            workload_calculator=lambda payload: 0.0,
-        ),
     ],
     log_action_config=LogActionConfig(
         on_load=["Application startup complete."],
         on_error=[
             "CUDA error:",
-            "error from cudaGetDeviceCount"
+            "error from cudaGetDeviceCount",
+            "RuntimeError:",
+            "Traceback (most recent call last):",
+        ],
+        on_info=[
+            "Loading model:",
+            "Running load_models()",
+            "METRICS - Voice noise reduction completed",
+            "METRICS - Voice conversion completed",
+            "METRICS - Audio mixing completed",
+            "METRICS - Input conversion completed",
+            "PIPELINE TIMING REPORT",
         ],
     ),
 )
