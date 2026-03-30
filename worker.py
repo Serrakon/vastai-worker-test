@@ -68,8 +68,6 @@ worker_config = WorkerConfig(
         on_error=[
             "CUDA error:",
             "error from cudaGetDeviceCount",
-            "RuntimeError:",
-            "Traceback (most recent call last):",
         ],
         on_info=[
             "Loading model:",
