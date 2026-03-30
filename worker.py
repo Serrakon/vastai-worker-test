@@ -28,7 +28,7 @@ BENCHMARK_VOICE_URL = os.environ.get(
 )
 
 
-def _benchmark_payload():
+def _benchmark_payload(payload=None):
     """Generate a real covers payload for benchmarking /process throughput."""
     # return {
     #     "request_id": f"benchmark-{uuid.uuid4()}",
